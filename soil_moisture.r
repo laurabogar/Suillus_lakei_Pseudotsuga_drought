@@ -5,13 +5,18 @@ library(tidyverse)
 library(cowplot)
 library(lubridate)
 
-soil_moisture = read_csv("../Suillus Soil Data.xlsx - Sheet1.csv", skip = 2)
+soil_moisture = read_csv("data/Suillus Soil Data.xlsx - Sheet1.csv", skip = 2)
 
-harvest_data = read_csv("../Suillus Harvest Data.xlsx - Sheet1.csv")
+harvest_data = read_csv("data/Suillus Harvest Data.xlsx - Sheet1.csv")
+
+water_potentials = read_csv("data/Suillus water potential data - Sheet1.csv")
+water_potentials$Water_potential_MPa = as.numeric(water_potentials$Water_potential_MPa)
 
 soil = rename(soil_moisture, Plant_ID = ID)
 
 together = left_join(harvest_data, soil)
+together = left_join(together, water_potentials)
+
 
 head(together)
 summary(as.factor(together$Date))
@@ -37,6 +42,16 @@ ggplot(data = subset(together, soil_moisture_pct >= 0)) +
   geom_jitter(width = 0.20,
               aes(x = as.factor(Date), y = soil_moisture_pct)) +
   ylab("Percent soil moisture (gravimetric)") +
+  xlab("Harvest date")
+
+# Doesn't work yet, water potential data too dirty.
+ggplot(data = subset(together, soil_moisture_pct >= 0)) +
+  theme_cowplot() +
+  geom_boxplot(outlier.alpha = 0,
+               aes(x = as.factor(Date), y = Water_potential_MPa)) +
+  geom_jitter(width = 0.20,
+              aes(x = as.factor(Date), y = Water_potential_MPa)) +
+  ylab("Water potential (MPa)") +
   xlab("Harvest date")
 
 # Example code to steal from
