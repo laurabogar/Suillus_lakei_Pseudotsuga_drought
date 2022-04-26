@@ -19,8 +19,12 @@ water_treatments$realdate = mdy(water_treatments$Date)
 ggplot(data = water_treatments) +
   theme_cowplot() +
   # geom_boxplot(outlier.alpha = 0,
-               # aes(x = as.factor(realdate), y = Water_potential_MPa)) +
-  geom_jitter(width = 0.20,
-              aes(x = realdate, y = Water_potential_MPa)) +
+  #              aes(x = (realdate), y = Water_potential_MPa)) +
+  geom_jitter(width = 0.30,
+              aes(x = realdate, 
+                  y = Water_potential_MPa,
+                  color = Water,
+                  alpha = 0.5, 
+                  shape = Spore)) +
   ylab("Water potential (MPa)") +
   xlab("Harvest date")
