@@ -1,9 +1,10 @@
 # Preliminary % colonization plot
 
 library(tidyverse)
+library(readxl)
 library(cowplot)
 
-harvest_data = read_csv("data/Suillus Harvest Data.xlsx - Sheet1.csv")
+harvest_data = read_excel("data/Suillus Harvest Data_cleaned.xlsx")
 treatments = read_csv("data/Suillus Treatment Inventory.xlsx - Sheet1.csv")
 
 together = left_join(harvest_data, treatments)
