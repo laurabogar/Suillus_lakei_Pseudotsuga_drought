@@ -39,6 +39,8 @@ together = together %>% mutate(soil_moisture_pct = (soil_moisture_loss_corrected
 
 together$days_since_watering = as.numeric(word(together$Batch, 3))
 
+write_csv(together, "data/harvest_data_with_moisture_and_treatments.csv")
+
 investigate = together[is.na(together$days_since_watering),]
 # hmm, we are missing important data on a handful of plants
 # and all the dead seedlings. (Don't know fertilizer or water level.)

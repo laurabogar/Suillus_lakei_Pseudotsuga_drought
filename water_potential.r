@@ -1,4 +1,5 @@
 # WATER POTENTIAL
+# Basically all of this has moved to the soil moisture script actually.
 
 library(tidyverse)
 library(cowplot)
