@@ -4,14 +4,18 @@ library(tidyverse)
 library(readxl)
 library(cowplot)
 
-harvest_data = read_excel("data/Suillus Harvest Data_cleaned.xlsx")
-treatments = read_csv("data/Suillus Treatment Inventory.xlsx - Sheet1.csv")
+harvest_data = read_csv("data/harvest_data_with_moisture_and_treatments.csv")
+# treatments = read_csv("data/Suillus Treatment Inventory.xlsx - Sheet1.csv")
 
-together = left_join(harvest_data, treatments)
+together = harvest_data
 together$Colonized_tips = as.numeric(together$Colonized_tips)
 together$Total_root_tips = as.numeric(together$Total_root_tips)
 together = mutate(together,
                   percent_colonization = (Colonized_tips/Total_root_tips)*100)
+
+col_data = select(together, Plant_ID, percent_colonization)
+
+write_csv(col_data, "data/percent_colonization_only.csv")
 
 ggplot(data = subset(together, Spore == "spore")) +
   theme_cowplot() +

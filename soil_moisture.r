@@ -5,7 +5,7 @@ library(tidyverse)
 library(cowplot)
 library(lubridate)
 
-WATER_SLOPE = -0.0036985 # calculated with linear model below
+WATER_SLOPE = -0.0033383 # calculated with linear model below
 
 soil_moisture = read_csv("data/Suillus Soil Data.xlsx - Sheet1.csv", skip = 2)
 treatment_inventory = read_csv("data/Suillus Treatment Inventory.xlsx - Sheet1.csv")
@@ -21,6 +21,18 @@ harvest_data$harvesttime = word(harvest_data$Time, 2)
 harvest_data$harvest_datetime = paste(word(harvest_data$Date, 1), harvest_data$harvesttime)
 harvest_data$harvest_datetime = parse_date_time2(harvest_data$harvest_datetime,
                                             orders = "%Y-%m-%d %H:%M:%S")
+harvest_data = select(harvest_data, everything(), -Date)
+
+#### BLIND FILTERING -- FIX THIS ASAP ####
+
+# DATA ENTRY MUST BE FIXED: We have several repeated plant IDs on many of these spreadsheets.
+# I am just going to remove them for now, but this will reduce my ability
+# to see what's actually happening.
+
+harvest_data = harvest_data %>% distinct(Plant_ID, .keep_all = TRUE)
+soil = soil %>% distinct(Plant_ID, .keep_all = TRUE)
+water_potentials = water_potentials %>% distinct(Plant_ID, .keep_all = TRUE)
+treatment_inventory = treatment_inventory %>% distinct(Plant_ID, .keep_all = TRUE)
 
 together = left_join(harvest_data, soil)
 together = left_join(together, water_potentials)
@@ -37,16 +49,13 @@ together = together %>% mutate(soil_moisture_loss_corrected =
                                            soil_moisture_loss > 0 ~ soil_moisture_loss)) # otherwise assume gravimetric is a reasonable estimate.
 together = together %>% mutate(soil_moisture_pct = (soil_moisture_loss_corrected/soil_wet_g)*100)
 
+
 together$days_since_watering = as.numeric(word(together$Batch, 3))
 
-write_csv(together, "data/harvest_data_with_moisture_and_treatments.csv")
 
 investigate = together[is.na(together$days_since_watering),]
 # hmm, we are missing important data on a handful of plants
 # and all the dead seedlings. (Don't know fertilizer or water level.)
-
-# REMOVE THIS FILTER WHEN READY, THESE NAS SHOULD GO AWAY WHEN DATA ARE COMPLETE
-# together = subset(together, is.na(together$Date) == FALSE)
 
 ggplot(data = subset(together, soil_moisture_pct >= 0)) +
   theme_cowplot() +
@@ -86,6 +95,11 @@ together$water_potential_formatted_time = parse_date_time2(datetimes,
 water_potential_time_in_cooler = together$water_potential_formatted_time - together$harvest_datetime
 together$water_potential_lag = water_potential_time_in_cooler
 
+#### ANOTHER BAD FILTER IMPOSED BECAUSE OF DIRTY DATA ####
+together = subset(together, water_potential_lag > 0)
+together = subset(together, Water_potential_MPa >= -4)
+
+
 watermodel = lm(Water_potential_MPa ~ water_potential_lag, data = together)
 summary(watermodel)
 
@@ -103,14 +117,14 @@ water_potential_regression = ggplot(data = together) +
             color = "black",
             size = 0.5) +
   scale_color_manual(values = c("goldenrod2", "black", "royalblue2")) +
-  scale_y_continuous(limits = c(-8, 0)) +
+  # scale_y_continuous(limits = c(-8, 0)) +
   # annotate("text", paste(expression(beta), " = -0.0036985"), x = 300) +
   ylab("Shoot water potential (MPa)\n(synthetic pre-dawn)") +
   xlab("Minutes since harvest")
 
 water_potential_regression_annotated = ggdraw(water_potential_regression) +
-  draw_label("y = -0.0037x - 1.11", x = .75, y = .25) +
-  draw_label("Adj. R^2 = 0.079", x = .75, y = .2)
+  draw_label("y = -0.0033x - 1.10", x = .75, y = .85) +
+  draw_label("Adj. R^2 = 0.132", x = .75, y = .8)
 
 save_plot("plots/water_potential_regression_annotated.pdf", water_potential_regression_annotated)
 
@@ -125,6 +139,8 @@ save_plot("plots/water_potential_regression_annotated.pdf", water_potential_regr
 # Let's correct the water potentials with this factor:
 
 together$water_potential_corrected = together$Water_potential_MPa - WATER_SLOPE*together$lagnumeric
+
+write_csv(together, "data/harvest_data_with_moisture_and_treatments.csv")
 
 
 # Preliminary water potential plot
